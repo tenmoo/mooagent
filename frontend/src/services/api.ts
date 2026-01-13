@@ -71,6 +71,11 @@ class ApiService {
     return response.data;
   }
 
+  async getAgentTools() {
+    const response = await this.api.get('/agent/tools');
+    return response.data;
+  }
+
   // Health check
   async healthCheck() {
     const response = await this.api.get('/health');

@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
+import { apiService } from '../services/api';
 import '../styles/Chat.css';
 
 export default function Chat() {
   const { user, logout } = useAuthStore();
   const { messages, isLoading, sendMessage, clearMessages } = useChatStore();
   const [input, setInput] = useState('');
+  const [showTools, setShowTools] = useState(false);
+  const [tools, setTools] = useState<any>(null);
+  const [loadingTools, setLoadingTools] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -16,6 +20,24 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const handleLoadTools = async () => {
+    if (tools) {
+      setShowTools(!showTools);
+      return;
+    }
+    
+    setLoadingTools(true);
+    try {
+      const toolsData = await apiService.getAgentTools();
+      setTools(toolsData);
+      setShowTools(true);
+    } catch (error) {
+      console.error('Failed to load tools:', error);
+    } finally {
+      setLoadingTools(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +67,9 @@ export default function Chat() {
           <h1>🐄 Moo</h1>
           <div className="header-actions">
             <span className="user-info">{user?.email}</span>
+            <button onClick={handleLoadTools} className="btn-secondary">
+              {loadingTools ? 'Loading...' : showTools ? 'Hide Tools' : 'Show Tools'}
+            </button>
             <button onClick={clearMessages} className="btn-secondary">
               Clear Chat
             </button>
@@ -56,6 +81,48 @@ export default function Chat() {
       </header>
 
       <div className="chat-messages">
+        {showTools && tools && (
+          <div className="tools-panel">
+            <h3>🛠️ Available Tools</h3>
+            
+            <div className="tools-section">
+              <h4>Built-in Tools</h4>
+              {tools.built_in_tools?.map((tool: any, index: number) => (
+                <div key={index} className="tool-item">
+                  <strong>{tool.name}</strong>
+                  <p>{tool.description}</p>
+                </div>
+              ))}
+            </div>
+
+            {tools.mcp_server_url && (
+              <div className="tools-section">
+                <h4>MCP Tools ({tools.mcp_server_url})</h4>
+                {tools.mcp_tools && tools.mcp_tools.length > 0 ? (
+                  tools.mcp_tools.map((tool: any, index: number) => (
+                    <div key={index} className="tool-item mcp-tool">
+                      <strong>{tool.name}</strong>
+                      <p>{tool.description}</p>
+                      {tool.parameters && (
+                        <details>
+                          <summary>Parameters</summary>
+                          <pre>{JSON.stringify(tool.parameters, null, 2)}</pre>
+                        </details>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p className="no-tools">
+                    {tools.mcp_error 
+                      ? `Error: ${tools.mcp_error}` 
+                      : 'No MCP tools available'}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
         {messages.length === 0 ? (
           <div className="empty-state">
             <h2>Welcome to Moo!</h2>

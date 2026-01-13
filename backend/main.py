@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import timedelta
-from typing import Dict
+from typing import Dict, Any
 
 from config import settings
 from models import (
@@ -135,6 +135,39 @@ async def get_agent_info(
         "system_prompt": moo_agent.get_system_prompt(),
         "model": "Groq LLaMA 3 70B"
     }
+
+
+@app.get("/agent/tools")
+async def get_agent_tools(
+    current_user: User = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Get information about available agent tools including MCP tools."""
+    from typing import Any
+    
+    tools_info = {
+        "built_in_tools": [
+            {
+                "name": "AssistantHelper",
+                "description": "A helpful assistant that can help with various daily work tasks, answer questions, and provide information."
+            }
+        ],
+        "mcp_tools": [],
+        "mcp_server_url": settings.mcp_server_url or None
+    }
+    
+    # Get MCP tools if available
+    if settings.mcp_server_url:
+        try:
+            from mcp_agent import MCPSubAgent
+            mcp_agent_instance = MCPSubAgent(settings.mcp_server_url)
+            mcp_tools = await mcp_agent_instance.list_tools()
+            tools_info["mcp_tools"] = mcp_tools
+            await mcp_agent_instance.close()
+        except Exception as e:
+            print(f"Error fetching MCP tools: {e}")
+            tools_info["mcp_error"] = str(e)
+    
+    return tools_info
 
 
 if __name__ == "__main__":

@@ -10,6 +10,9 @@ An AI-powered personal assistant that helps with your daily work, built with mod
 ## 🚀 Features
 
 - 🤖 **AI-Powered Conversations**: Intelligent responses powered by Groq LLaMA 3
+- 🔌 **MCP Integration**: Connect to remote tools via Model Context Protocol
+- 🛠️ **Tool Discovery**: View available tools directly in the chat interface
+- 🧪 **Test MCP Server**: Includes ready-to-use test server with 4 example tools
 - 🔐 **Secure Authentication**: JWT-based authentication with OAuth 2.0 pattern
 - 💬 **Real-time Chat**: Beautiful, responsive chat interface
 - 🎨 **Modern UI**: Dark theme with smooth animations
@@ -23,6 +26,7 @@ mooagent/
 ├── backend/          # FastAPI backend
 │   ├── main.py       # API routes and FastAPI app
 │   ├── agent.py      # AI agent implementation
+│   ├── mcp_agent.py  # MCP sub-agent for remote tools
 │   ├── auth.py       # Authentication logic
 │   ├── models.py     # Pydantic models
 │   └── config.py     # Configuration
@@ -34,6 +38,10 @@ mooagent/
 │   │   ├── store/    # State management
 │   │   └── styles/   # CSS styles
 │   └── public/       # Static assets
+│
+├── test-mcp-server/ # Test MCP server with example tools
+│   ├── mcp_test_server.py
+│   └── requirements.txt
 │
 └── docs/            # Documentation
     └── prd.md       # Product requirements
@@ -131,6 +139,37 @@ npm run dev
 ```
 
 Frontend will be running at http://localhost:3000
+
+## 🧪 Testing MCP Integration
+
+MooAgent includes a test MCP server with example tools. To try it:
+
+### Start the Test MCP Server
+
+```bash
+cd test-mcp-server
+pip install -r requirements.txt
+python mcp_test_server.py
+```
+
+Server will run on http://localhost:3001 with 4 tools:
+- **calculator** - Basic math operations
+- **weather** - Simulated weather data
+- **time** - Current time in any timezone
+- **uuid** - Generate random UUIDs
+
+### Configure MooAgent to Use It
+
+Edit `backend/.env`:
+```env
+MCP_SERVER_URL=http://localhost:3001
+```
+
+Restart backend and try in chat:
+- "What's 25 + 17?"
+- "What's the weather in Tokyo?"
+- "Generate a UUID"
+- Click **"Show Tools"** to see all available tools!
 
 ## 📚 API Documentation
 

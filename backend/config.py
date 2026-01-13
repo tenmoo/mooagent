@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # CORS Configuration
     allowed_origins: str = "http://localhost:3000"
     
+    # MCP Configuration (optional)
+    mcp_server_url: str = ""
+    
     @property
     def cors_origins(self) -> List[str]:
         """Parse CORS origins from comma-separated string."""

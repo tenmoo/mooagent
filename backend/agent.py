@@ -1,10 +1,12 @@
 from langchain_groq import ChatGroq
-from langchain.agents import initialize_agent, Tool, AgentType
+from langchain.agents import AgentExecutor, create_react_agent
 from langchain.memory import ConversationBufferMemory
 from langchain.schema import HumanMessage, AIMessage, SystemMessage
+from langchain import hub
 from typing import List, Dict
 from config import settings
 from models import ChatMessage
+from mcp_agent import MCPToolWrapper
 
 
 class MooAgent:
@@ -32,29 +34,104 @@ class MooAgent:
         # Define tools for the agent
         self.tools = self._create_tools()
         
-        # Initialize the agent
-        self.agent = initialize_agent(
-            tools=self.tools,
+        # Get the react prompt template
+        # This is the standard ReAct prompt from LangChain hub
+        try:
+            prompt = hub.pull("hwchase17/react-chat")
+        except:
+            # Fallback to a custom prompt if hub is not accessible
+            from langchain.prompts import PromptTemplate
+            template = """Assistant is a large language model trained by Groq.
+
+Assistant is designed to be helpful, harmless, and honest. Assistant should always be polite and respectful.
+
+TOOLS:
+------
+
+Assistant has access to the following tools:
+
+{tools}
+
+To use a tool, please use the following format:
+
+```
+Thought: Do I need to use a tool? Yes
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+```
+
+When you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
+
+```
+Thought: Do I need to use a tool? No
+Final Answer: [your response here]
+```
+
+Begin!
+
+Previous conversation history:
+{chat_history}
+
+New input: {input}
+{agent_scratchpad}"""
+            
+            prompt = PromptTemplate(
+                template=template,
+                input_variables=["input", "chat_history", "agent_scratchpad", "tools", "tool_names"]
+            )
+        
+        # Create the agent
+        agent = create_react_agent(
             llm=self.llm,
-            agent=AgentType.CONVERSATIONAL_REACT_DESCRIPTION,
+            tools=self.tools,
+            prompt=prompt
+        )
+        
+        # Create the agent executor
+        self.agent = AgentExecutor(
+            agent=agent,
+            tools=self.tools,
             verbose=settings.debug,
-            max_iterations=3,
-            early_stopping_method="generate",
+            max_iterations=10,  # Increased from 3 to 10
+            max_execution_time=30,  # 30 second timeout
+            handle_parsing_errors=True,
+            return_intermediate_steps=False
         )
     
-    def _create_tools(self) -> List[Tool]:
+    def _create_tools(self) -> List:
         """Create tools for the agent."""
-        return [
+        from langchain.tools import Tool
+        
+        tools = [
             Tool(
                 name="AssistantHelper",
                 func=self._assistant_helper,
                 description="A helpful assistant that can help with various daily work tasks, answer questions, and provide information."
             )
         ]
+        
+        # Add MCP tool if configured
+        if settings.mcp_server_url:
+            try:
+                mcp_wrapper = MCPToolWrapper(settings.mcp_server_url)
+                tools.append(
+                    Tool(
+                        name="MCPRemoteTool",
+                        func=mcp_wrapper.call_mcp_tool,
+                        description=f"Call remote MCP server tools at {settings.mcp_server_url}. Use this to access external tools and resources. Input should be a natural language description of what you want to do."
+                    )
+                )
+                print(f"✅ MCP sub-agent initialized with server: {settings.mcp_server_url}")
+            except Exception as e:
+                print(f"⚠️  Warning: Could not initialize MCP sub-agent: {e}")
+        
+        return tools
     
     def _assistant_helper(self, query: str) -> str:
         """Assistant helper function."""
-        return f"I'm here to help you with: {query}. This is a demo response. In production, this would connect to real tools and APIs."
+        # For simple queries that don't need external tools
+        return f"I can help you with: {query}. Let me know if you need specific calculations, weather info, time, or UUID generation - I have tools for those!"
     
     def chat(self, message: str, conversation_history: List[ChatMessage] = None) -> str:
         """
@@ -84,32 +161,28 @@ class MooAgent:
             
             # Get response from agent
             if conversation_history:
-                # Use agent with memory for conversation
-                memory = ConversationBufferMemory(
-                    memory_key="chat_history",
-                    return_messages=True
-                )
-                
-                # Add history to memory
+                # Build chat history string
+                chat_history = ""
                 for msg in conversation_history:
                     if msg.role == "user":
-                        memory.chat_memory.add_user_message(msg.content)
+                        chat_history += f"Human: {msg.content}\n"
                     elif msg.role == "assistant":
-                        memory.chat_memory.add_ai_message(msg.content)
+                        chat_history += f"Assistant: {msg.content}\n"
                 
-                # Use invoke instead of deprecated run
+                # Use invoke with the new agent executor
                 response = self.agent.invoke({
                     "input": message,
-                    "chat_history": memory.chat_memory.messages
+                    "chat_history": chat_history
                 })
+                
                 # Extract the output from the response
                 if isinstance(response, dict):
                     response = response.get("output", str(response))
                 else:
                     response = str(response)
             else:
-                # Direct LLM call for simple queries
-                response = self.llm.invoke(messages)
+                # Direct LLM call for simple queries without history
+                response = self.llm.invoke([HumanMessage(content=message)])
                 response = response.content
             
             return response
