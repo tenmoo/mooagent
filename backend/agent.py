@@ -96,7 +96,7 @@ New input: {input}
             max_iterations=10,  # Increased from 3 to 10
             max_execution_time=30,  # 30 second timeout
             handle_parsing_errors=True,
-            return_intermediate_steps=False
+            return_intermediate_steps=True  # Return tool usage details
         )
     
     def _create_tools(self) -> List:
@@ -159,31 +159,46 @@ New input: {input}
             # Add current message
             messages.append(HumanMessage(content=message))
             
-            # Get response from agent
+            # Always use the agent (even for first message) to enable tool usage
+            # Build chat history string
+            chat_history = ""
             if conversation_history:
-                # Build chat history string
-                chat_history = ""
                 for msg in conversation_history:
                     if msg.role == "user":
                         chat_history += f"Human: {msg.content}\n"
                     elif msg.role == "assistant":
                         chat_history += f"Assistant: {msg.content}\n"
-                
-                # Use invoke with the new agent executor
-                response = self.agent.invoke({
-                    "input": message,
-                    "chat_history": chat_history
-                })
-                
-                # Extract the output from the response
-                if isinstance(response, dict):
-                    response = response.get("output", str(response))
-                else:
-                    response = str(response)
+            
+            print(f"\n{'='*60}")
+            print(f"🤖 Agent Processing Query: {message}")
+            print(f"📚 Conversation History Length: {len(conversation_history) if conversation_history else 0}")
+            print(f"{'='*60}\n")
+            
+            # Use invoke with the new agent executor
+            response = self.agent.invoke({
+                "input": message,
+                "chat_history": chat_history
+            })
+            
+            print(f"\n{'='*60}")
+            print(f"📊 Agent Response Object Type: {type(response)}")
+            print(f"📊 Agent Response Keys: {response.keys() if isinstance(response, dict) else 'N/A'}")
+            
+            if isinstance(response, dict) and 'intermediate_steps' in response:
+                print(f"🔧 Tool Usage Steps: {len(response['intermediate_steps'])}")
+                for i, (action, observation) in enumerate(response['intermediate_steps'], 1):
+                    print(f"\n  Step {i}:")
+                    print(f"    Tool: {action.tool}")
+                    print(f"    Input: {action.tool_input[:100]}...")
+                    print(f"    Output: {str(observation)[:200]}...")
+            
+            print(f"{'='*60}\n")
+            
+            # Extract the output from the response
+            if isinstance(response, dict):
+                response = response.get("output", str(response))
             else:
-                # Direct LLM call for simple queries without history
-                response = self.llm.invoke([HumanMessage(content=message)])
-                response = response.content
+                response = str(response)
             
             return response
             
