@@ -106,8 +106,14 @@ async def chat(
     Chat with the AI agent.
     
     This endpoint processes user messages and returns AI-generated responses.
+    Optionally accepts a model parameter to use a specific LLM model.
     """
     try:
+        # If a model is specified and different from current, switch models
+        if request.model and request.model != moo_agent.current_model:
+            print(f"🔄 Switching model from {moo_agent.current_model} to {request.model}")
+            moo_agent.set_model(request.model)
+        
         response = moo_agent.chat(
             message=request.message,
             conversation_history=request.conversation_history
@@ -118,9 +124,23 @@ async def chat(
             conversation_id=None  # Could generate/track conversation IDs in production
         )
     except Exception as e:
+        error_msg = str(e)
+        
+        # Check if it's a model decommissioned error
+        if "model_decommissioned" in error_msg or "has been decommissioned" in error_msg:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"The selected model is no longer available. Please choose a different model from the model selector. Error: {error_msg}"
+            )
+        
+        # Log the full error for debugging
+        print(f"❌ Chat error: {error_msg}")
+        import traceback
+        traceback.print_exc()
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error processing chat: {str(e)}"
+            detail=f"Error processing chat: {error_msg}"
         )
 
 
@@ -133,7 +153,19 @@ async def get_agent_info(
         "name": "MooAgent",
         "description": "AI-powered personal assistant",
         "system_prompt": moo_agent.get_system_prompt(),
-        "model": "Groq LLaMA 3 70B"
+        "model": moo_agent.current_model
+    }
+
+
+@app.get("/agent/models")
+async def get_available_models(
+    current_user: User = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Get list of available LLM models."""
+    return {
+        "models": settings.available_models,
+        "current_model": moo_agent.current_model,
+        "default_model": settings.default_model
     }
 
 

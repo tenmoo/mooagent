@@ -58,10 +58,11 @@ class ApiService {
   }
 
   // Chat endpoints
-  async sendMessage(message: string, conversationHistory: any[] = []) {
+  async sendMessage(message: string, conversationHistory: any[] = [], model?: string) {
     const response = await this.api.post('/chat', {
       message,
       conversation_history: conversationHistory,
+      model,
     });
     return response.data;
   }
@@ -73,6 +74,11 @@ class ApiService {
 
   async getAgentTools() {
     const response = await this.api.get('/agent/tools');
+    return response.data;
+  }
+
+  async getAvailableModels() {
+    const response = await this.api.get('/agent/models');
     return response.data;
   }
 

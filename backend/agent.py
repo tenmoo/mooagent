@@ -12,24 +12,14 @@ from mcp_agent import MCPToolWrapper
 class MooAgent:
     """AI Agent powered by Groq and LangChain."""
     
-    def __init__(self):
-        """Initialize the MooAgent."""
-        # Try to use the latest available model
-        # Check https://console.groq.com/docs/models for current models
-        try:
-            self.llm = ChatGroq(
-                model="llama-3.3-70b-versatile",
-                temperature=0.7,
-                groq_api_key=settings.groq_api_key
-            )
-        except Exception as e:
-            print(f"Warning: Could not initialize llama-3.3-70b-versatile, trying fallback model: {e}")
-            # Fallback to a commonly available model
-            self.llm = ChatGroq(
-                model="llama-3.1-8b-instant",
-                temperature=0.7,
-                groq_api_key=settings.groq_api_key
-            )
+    def __init__(self, model: str = None):
+        """Initialize the MooAgent with optional model selection.
+        
+        Args:
+            model: Model ID to use. If None, uses default from settings.
+        """
+        self.current_model = model or settings.default_model
+        self.llm = self._initialize_llm(self.current_model)
         
         # Define tools for the agent
         self.tools = self._create_tools()
@@ -41,39 +31,41 @@ class MooAgent:
         except:
             # Fallback to a custom prompt if hub is not accessible
             from langchain.prompts import PromptTemplate
-            template = """Assistant is a large language model trained by Groq.
-
-Assistant is designed to be helpful, harmless, and honest. Assistant should always be polite and respectful.
+            template = """You are a helpful AI assistant with access to tools.
 
 TOOLS:
 ------
-
-Assistant has access to the following tools:
+You have access to the following tools:
 
 {tools}
 
-To use a tool, please use the following format:
+RESPONSE FORMAT:
+----------------
+To use a tool, you MUST use this exact format:
 
-```
-Thought: Do I need to use a tool? Yes
-Action: the action to take, should be one of [{tool_names}]
-Action Input: the input to the action
-Observation: the result of the action
-```
+Thought: [your reasoning about what to do]
+Action: [tool name - must be one of: {tool_names}]
+Action Input: [the input to the tool]
 
-When you have a response to say to the Human, or if you do not need to use a tool, you MUST use the format:
+After you see the Observation, you can continue thinking and acting, or provide a final answer.
 
-```
-Thought: Do I need to use a tool? No
-Final Answer: [your response here]
-```
+To respond without using a tool, you MUST use this exact format:
 
-Begin!
+Thought: [your reasoning]
+Final Answer: [your response to the user]
 
-Previous conversation history:
+IMPORTANT RULES:
+- ALWAYS include "Thought:" before your reasoning
+- ALWAYS include "Action:" when using a tool
+- ALWAYS include "Final Answer:" when responding directly
+- Do NOT skip any of these labels
+- Do NOT add extra text outside the format
+
+Previous conversation:
 {chat_history}
 
-New input: {input}
+User: {input}
+
 {agent_scratchpad}"""
             
             prompt = PromptTemplate(
@@ -88,16 +80,58 @@ New input: {input}
             prompt=prompt
         )
         
-        # Create the agent executor
+        # Create the agent executor with better error handling
         self.agent = AgentExecutor(
             agent=agent,
             tools=self.tools,
             verbose=settings.debug,
-            max_iterations=10,  # Increased from 3 to 10
-            max_execution_time=30,  # 30 second timeout
-            handle_parsing_errors=True,
-            return_intermediate_steps=True  # Return tool usage details
+            max_iterations=10,
+            max_execution_time=30,
+            handle_parsing_errors="Check your output and make sure it conforms to the format instructions. If you want to respond directly, use 'Final Answer: your response'",
+            return_intermediate_steps=True
         )
+    
+    def _initialize_llm(self, model: str):
+        """Initialize the LLM with the specified model through Groq.
+        
+        All models (including OpenAI GPT-OSS) run on Groq's infrastructure.
+        
+        Args:
+            model: Model ID to use (e.g., "openai/gpt-oss-120b", "llama-3.3-70b-versatile")
+            
+        Returns:
+            Initialized ChatGroq instance
+        """
+        try:
+            llm = ChatGroq(
+                model=model,
+                temperature=0.7,
+                groq_api_key=settings.groq_api_key
+            )
+            print(f"✅ Initialized Groq LLM with model: {model}")
+            return llm
+        except Exception as e:
+            print(f"⚠️  Warning: Could not initialize {model}, trying fallback: {e}")
+            # Fallback to the fastest model
+            fallback_model = "llama-3.1-8b-instant"
+            llm = ChatGroq(
+                model=fallback_model,
+                temperature=0.7,
+                groq_api_key=settings.groq_api_key
+            )
+            print(f"✅ Using fallback model: {fallback_model}")
+            return llm
+    
+    def set_model(self, model: str):
+        """Change the LLM model dynamically.
+        
+        Args:
+            model: Model ID to switch to
+        """
+        self.current_model = model
+        self.llm = self._initialize_llm(model)
+        # Reinitialize the agent with the new LLM
+        self.__init__(model=model)
     
     def _create_tools(self) -> List:
         """Create tools for the agent."""
@@ -115,11 +149,23 @@ New input: {input}
         if settings.mcp_server_url:
             try:
                 mcp_wrapper = MCPToolWrapper(settings.mcp_server_url)
+                
+                # Build dynamic description based on available tools
+                tool_description = """Access remote MCP server tools for:
+- Adobe HelpX: Search Adobe product documentation (Photoshop, Illustrator, Acrobat, etc.). Use for questions like "how to crop in Photoshop" or "create PDF in Acrobat"
+- Calculator: Perform mathematical calculations
+- Weather: Get weather information for cities
+- Time: Get current time information
+- UUID: Generate unique identifiers
+- Adobe Regions: Get Adobe region names for cloud regions
+
+Input should be a natural language description of what you want to do."""
+                
                 tools.append(
                     Tool(
                         name="MCPRemoteTool",
                         func=mcp_wrapper.call_mcp_tool,
-                        description=f"Call remote MCP server tools at {settings.mcp_server_url}. Use this to access external tools and resources. Input should be a natural language description of what you want to do."
+                        description=tool_description
                     )
                 )
                 print(f"✅ MCP sub-agent initialized with server: {settings.mcp_server_url}")

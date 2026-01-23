@@ -46,6 +46,7 @@ class ChatRequest(BaseModel):
     """Chat request model."""
     message: str
     conversation_history: Optional[List[ChatMessage]] = []
+    model: Optional[str] = None  # Optional model selection
 
 
 class ChatResponse(BaseModel):

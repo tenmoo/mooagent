@@ -17,6 +17,9 @@ An AI-powered personal assistant that helps with your daily work, built with mod
 - 💬 **Real-time Chat**: Beautiful, responsive chat interface
 - 🎨 **Modern UI**: Dark theme with smooth animations
 - 📱 **Responsive Design**: Works seamlessly on all devices
+- 📝 **Smart Text Wrapping**: Messages wrap properly without horizontal overflow
+- ✨ **Markdown Support**: Full GitHub Flavored Markdown rendering
+- 🤖 **Model Selector**: Choose between multiple LLM models
 - 🚀 **High Performance**: Built with FastAPI and React for optimal speed
 
 ## 🏗️ Architecture
@@ -64,6 +67,7 @@ mooagent/
 - **State Management**: Zustand
 - **HTTP Client**: Axios
 - **Routing**: React Router
+- **Markdown**: react-markdown with remark-gfm
 - **Deployment**: Vercel
 
 ## 📋 Prerequisites
