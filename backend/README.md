@@ -4,16 +4,18 @@ AI-powered personal assistant backend built with FastAPI, Groq, and LangChain.
 
 ## Features
 
-- 🤖 AI agent powered by Groq LLaMA 3
+- 🤖 AI agent powered by OpenAI GPT-OSS & Meta LLaMA via Groq
+- 🔄 Multiple model selection (GPT-OSS 120B/20B, LLaMA 3.3 70B/3.1 8B)
 - 🔐 JWT-based authentication
 - 💬 Conversational AI with context memory
+- 🔌 Model Context Protocol (MCP) integration
 - 🚀 FastAPI for high performance
 - 📝 Full OpenAPI documentation
 
 ## Tech Stack
 
 - **Framework**: FastAPI
-- **AI/LLM**: Groq (LLaMA 3 70B)
+- **AI/LLM**: Groq (OpenAI GPT-OSS & Meta LLaMA models)
 - **AI Framework**: LangChain
 - **Authentication**: JWT with OAuth 2.0 pattern
 - **Deployment**: Fly.io
@@ -80,8 +82,10 @@ The API will be available at:
 
 ### Chat
 
-- `POST /chat` - Chat with the AI agent
-- `GET /agent/info` - Get agent information
+- `POST /chat` - Chat with the AI agent (supports model parameter)
+- `GET /agent/info` - Get agent information and current model
+- `GET /agent/tools` - List all available tools (including MCP)
+- `GET /agent/models` - List all available LLM models
 
 ### Health
 
@@ -145,6 +149,7 @@ backend/
 ├── models.py         # Pydantic models
 ├── auth.py           # Authentication logic
 ├── agent.py          # AI agent implementation
+├── mcp_agent.py      # MCP sub-agent for remote tools
 ├── requirements.txt  # Python dependencies
 ├── fly.toml          # Fly.io configuration
 └── .env.example      # Environment variables template

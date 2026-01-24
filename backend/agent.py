@@ -128,10 +128,12 @@ User: {input}
         Args:
             model: Model ID to switch to
         """
+        print(f"🔄 Switching model from {self.current_model} to {model}")
         self.current_model = model
         self.llm = self._initialize_llm(model)
         # Reinitialize the agent with the new LLM
         self.__init__(model=model)
+        print(f"✅ Model switched successfully to {model}")
     
     def _create_tools(self) -> List:
         """Create tools for the agent."""

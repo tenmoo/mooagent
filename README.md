@@ -9,7 +9,7 @@ An AI-powered personal assistant that helps with your daily work, built with mod
 
 ## 🚀 Features
 
-- 🤖 **AI-Powered Conversations**: Intelligent responses powered by Groq LLaMA 3
+- 🤖 **AI-Powered Conversations**: Intelligent responses powered by Meta LLaMA & OpenAI GPT-OSS models via Groq
 - 🔌 **MCP Integration**: Connect to remote tools via Model Context Protocol
 - 🛠️ **Tool Discovery**: View available tools directly in the chat interface
 - 🧪 **Test MCP Server**: Includes ready-to-use test server with 4 example tools
@@ -19,7 +19,8 @@ An AI-powered personal assistant that helps with your daily work, built with mod
 - 📱 **Responsive Design**: Works seamlessly on all devices
 - 📝 **Smart Text Wrapping**: Messages wrap properly without horizontal overflow
 - ✨ **Markdown Support**: Full GitHub Flavored Markdown rendering
-- 🤖 **Model Selector**: Choose between multiple LLM models
+- 🤖 **Model Selector**: Choose between multiple LLM models with real-time switching
+- 🔍 **Enhanced Logging**: Detailed logs for debugging model switching and requests
 - 🚀 **High Performance**: Built with FastAPI and React for optimal speed
 
 ## 🏗️ Architecture
@@ -54,11 +55,12 @@ mooagent/
 
 ### Backend
 - **Framework**: FastAPI
-- **AI/LLM**: Groq (LLaMA 3 70B)
-- **AI Framework**: LangChain
+- **AI/LLM**: Groq (Meta LLaMA & OpenAI GPT-OSS models)
+- **AI Framework**: LangChain 0.2.16
 - **Authentication**: JWT with OAuth 2.0
 - **Deployment**: Fly.io
 - **Language**: Python 3.9+
+- **Logging**: Enhanced debugging with detailed request tracking
 
 ### Frontend
 - **Framework**: React 18

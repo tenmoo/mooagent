@@ -109,15 +109,26 @@ async def chat(
     Optionally accepts a model parameter to use a specific LLM model.
     """
     try:
+        # Log the incoming request
+        print(f"📨 Chat request from user: {current_user.email}")
+        print(f"📝 Message: {request.message[:50]}..." if len(request.message) > 50 else f"📝 Message: {request.message}")
+        print(f"🤖 Current model: {moo_agent.current_model}")
+        
         # If a model is specified and different from current, switch models
-        if request.model and request.model != moo_agent.current_model:
-            print(f"🔄 Switching model from {moo_agent.current_model} to {request.model}")
-            moo_agent.set_model(request.model)
+        if request.model:
+            print(f"🔍 Requested model: {request.model}")
+            if request.model != moo_agent.current_model:
+                print(f"🔄 Model switch needed: {moo_agent.current_model} → {request.model}")
+                moo_agent.set_model(request.model)
+            else:
+                print(f"✅ Already using requested model: {request.model}")
         
         response = moo_agent.chat(
             message=request.message,
             conversation_history=request.conversation_history
         )
+        
+        print(f"✅ Response generated successfully")
         
         return ChatResponse(
             response=response,

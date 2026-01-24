@@ -44,6 +44,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       // Use provided model or selected model from state
       const modelToUse = model || get().selectedModel || undefined;
+      console.log('📤 Sending message with model:', modelToUse);
 
       // Send to API
       const response = await apiService.sendMessage(content, conversationHistory, modelToUse);

@@ -67,6 +67,7 @@ export default function Chat() {
   };
 
   const handleModelSelect = (modelId: string) => {
+    console.log('🔄 Model selected in UI:', modelId);
     setSelectedModel(modelId);
     setShowModels(false);
   };
