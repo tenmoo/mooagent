@@ -300,9 +300,14 @@ ALLOWED_ORIGINS=http://localhost:3000
 VITE_API_URL=http://localhost:8000
 ```
 
-## 🤝 Contributing
+## 🙏 Acknowledgments
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+- [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework
+- [React](https://react.dev/) - UI library
+- [Groq](https://groq.com/) - Fast AI inference
+- [LangChain](https://www.langchain.com/) - LLM framework
+- [Fly.io](https://fly.io/) - Backend deployment
+- [Vercel](https://vercel.com/) - Frontend deployment
 
 ## AI Assistance Disclosure
 
@@ -315,19 +320,3 @@ This project is licensed under the Apache License 2.0.
 
 See the [LICENSE](/LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework
-- [React](https://react.dev/) - UI library
-- [Groq](https://groq.com/) - Fast AI inference
-- [LangChain](https://www.langchain.com/) - LLM framework
-- [Fly.io](https://fly.io/) - Backend deployment
-- [Vercel](https://vercel.com/) - Frontend deployment
-
-## 📞 Support
-
-For issues and questions, please open an issue on GitHub.
-
----
-
-**Built with ❤️ using FastAPI, React, and Groq**
