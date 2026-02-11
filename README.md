@@ -48,7 +48,6 @@ mooagent/
 │   └── requirements.txt
 │
 └── docs/            # Documentation
-    └── prd.md       # Product requirements
 ```
 
 ## 🛠️ Tech Stack
@@ -305,9 +304,16 @@ VITE_API_URL=http://localhost:8000
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
-## 📄 License
+## AI Assistance Disclosure
 
-This project is licensed under the MIT License.
+Portions of this project were developed with the assistance of AI-based tools. 
+All generated code was reviewed, modified, and validated by the author.
+
+## License
+
+This project is licensed under the Apache License 2.0.
+
+See the [LICENSE](/LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
